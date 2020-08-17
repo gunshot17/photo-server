@@ -1,7 +1,7 @@
 const path = require("path");
 const connection = require("../db/mysql_connection");
-const { post } = require("../routes/posts");
-const { off } = require("../db/mysql_connection");
+const fs = require("fs");
+
 // ㅁ
 // @desc        사진1장과 내용을 업로드 하는 API
 // @route       POST /api/v1/posts
@@ -154,7 +154,7 @@ exports.deletePost = async (req, res, next) => {
   let query = "select * from photo_post where id = ? ";
   let data = [post_id];
 
-  let photo_url;
+  let old_photo_url;
   try {
     [rows] = await connection.query(query, data);
     // 다른사람 포스팅이면, 401로 보낸다.
@@ -162,12 +162,17 @@ exports.deletePost = async (req, res, next) => {
       req.status(401).json();
       return;
     }
-    photo_url = rows[0].photo_url;
+    old_photo_url = rows[0].photo_url;
   } catch (e) {
     res.status(500).json();
     return;
   }
   // 이 사람의 포스팅이 맞는지 확인하는 코드 // 끝.
+
+  fs.unlink(`${process.env.FILE_UPLOAD_PATH}/${old_photo_url}`, function (err) {
+    if (err) console.log("error : " + err);
+    console.log("file deleted : " + old_photo_url);
+  });
 
   query = "delete from photo_post where id = ? ";
   data = [post_id];
